@@ -15,11 +15,9 @@ let channel;
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 let roomId = urlParams.get('room');
-console.log('room');
 if (!roomId) {
   roomId = 'main';
 }
-console.log({ roomId, uid });
 let displayName = sessionStorage.getItem('display_name');
 if (!displayName) {
   window.location = 'lobby.html';
@@ -32,19 +30,14 @@ let localScreenTracks;
 let sharingScreen = false;
 
 let joinRoomInit = async () => {
-  console.log('init Room');
   rtmClient = await AgoraRTM.createInstance(APP_ID);
-  console.log('init Room');
   await rtmClient.login({ uid, token });
 
   await rtmClient.addOrUpdateLocalUserAttributes({ name: displayName });
 
   channel = await rtmClient.createChannel(roomId);
   await channel.join();
-  console.log('channel:::', channel);
-  channel.on('MemberJoined', () => {
-    console.log('join');
-  });
+  channel.on('MemberJoined', handleMemberJoined);
   channel.on('MemberLeft', handleMemberLeft);
   channel.on('ChannelMessage', handleChannelMessage);
 
@@ -55,7 +48,7 @@ let joinRoomInit = async () => {
   await client.join(APP_ID, roomId, token, uid);
 
   client.on('user-published', handleUserPublished);
-  // client.on('user-left', handleUserLeft);
+  client.on('user-left', handleUserLeft);
 };
 
 let joinStream = async () => {
@@ -104,9 +97,7 @@ let switchToCamera = async () => {
 };
 
 let handleUserPublished = async (user, mediaType) => {
-  console.log('Publics');
   remoteUsers[user.uid] = user;
-  console.log('Publics');
   await client.subscribe(user, mediaType);
 
   let player = document.getElementById(`user-container-${user.uid}`);
